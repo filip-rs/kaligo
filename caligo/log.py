@@ -1,4 +1,5 @@
 import logging
+import os
 
 import colorlog
 
@@ -9,8 +10,13 @@ def setup_log(colorlog_enable: bool = False) -> None:
     """Configures logging"""
     logging.root.setLevel(level)
 
+    # Log directory is configurable so it can point at a writable location when
+    # the rest of the filesystem is read-only (e.g. the hardened container).
+    log_dir = os.environ.get("CALIGO_LOG_DIR", "caligo")
+    os.makedirs(log_dir, exist_ok=True)
+
     file_format = "[ %(asctime)s: %(levelname)-8s ] %(name)-15s - %(message)s"
-    logfile = logging.FileHandler("caligo/caligo.log")
+    logfile = logging.FileHandler(os.path.join(log_dir, "caligo.log"))
     formatter = logging.Formatter(file_format, datefmt="%H:%M:%S")
     logfile.setFormatter(formatter)
     logfile.setLevel(level)

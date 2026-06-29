@@ -3,6 +3,7 @@
 # environment file
 config.toml
 !sample_config.toml
+.env
 
 # Build folder
 dist/

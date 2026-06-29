@@ -177,12 +177,13 @@ class System(module.Module):
         except FileNotFoundError as E:
             after = util.time.usec()
             await ctx.respond(
-                f"""<b>Input</b>:<pre language="bash">{escape(snip)}</pre>
+                f"""<b>Input</b>:
+<pre language="bash">{escape(snip)}</pre>
 <b>Output</b>:
 ⚠️ Error executing command:
 <pre language="bash">{escape(util.error.format_exception(E))}</pre>
 
-f"Time: {util.time.format_duration_us(after - before)}""",
+Time: {util.time.format_duration_us(after - before)}""",
                 parse_mode=ParseMode.HTML,
             )
             return
@@ -192,8 +193,8 @@ f"Time: {util.time.format_duration_us(after - before)}""",
                 f"""<b>Input</b>:
 <pre language="bash">{escape(snip)}</pre>
 <b>Output</b>:
-🕑 Snippet failed to finish within 2 minutes."""
-                f"Time: {util.time.format_duration_us(after - before)}",
+🕑 Snippet failed to finish within 2 minutes.
+Time: {util.time.format_duration_us(after - before)}""",
                 parse_mode=ParseMode.HTML,
             )
             return

@@ -1,6 +1,11 @@
 import asyncio
 import os
-import tomli
+
+try:
+    import tomllib
+except ModuleNotFoundError:  # Python < 3.12
+    import tomli as tomllib
+
 from pyrogram.client import Client
 from caligo.core import database
 
@@ -10,7 +15,7 @@ def load_config(filename: str) -> dict:
     if os.path.isfile(filename) and os.access(filename, os.R_OK):
         # Load the configuration from the file in binary mode
         with open(filename, "rb") as config_file:
-            config = tomli.load(config_file)
+            config = tomllib.load(config_file)
     else:
         # Return an empty dictionary if the file is not found or not readable
         config = {}

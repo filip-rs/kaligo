@@ -11,6 +11,7 @@ from pyrogram.enums import ParseMode
 from pyrogram.errors import AuthKeyDuplicated, AuthKeyInvalid, AuthKeyUnregistered
 from pyrogram.handlers.callback_query_handler import CallbackQueryHandler
 from pyrogram.handlers.deleted_messages_handler import DeletedMessagesHandler
+from pyrogram.handlers.edited_message_handler import EditedMessageHandler
 from pyrogram.handlers.inline_query_handler import InlineQueryHandler
 from pyrogram.handlers.message_handler import MessageHandler
 from pyrogram.types import CallbackQuery, InlineQuery, Message, User
@@ -24,7 +25,11 @@ if TYPE_CHECKING:
     from .bot import Caligo
 
 Handler = Union[
-    CallbackQueryHandler, DeletedMessagesHandler, InlineQueryHandler, MessageHandler
+    CallbackQueryHandler,
+    DeletedMessagesHandler,
+    EditedMessageHandler,
+    InlineQueryHandler,
+    MessageHandler,
 ]
 Update = Union[CallbackQuery, InlineQuery, List[Message], Message]
 
@@ -97,10 +102,15 @@ class TelegramBot(CaligoBase):
         await self.init_client()
 
         # Command handler
+        # `filt.me` already means "from myself" (is_self or outgoing); `filt.me`
+        # alone is required because Pyrofork does NOT mark Saved Messages as
+        # outgoing, so `& filt.outgoing` would make commands silently fail there.
+        # The security gate is preserved: only the account owner's own messages
+        # are ever matched.
         self.client.add_handler(
             MessageHandler(
                 self.on_command,
-                filters=(self.command_predicate() & filt.me & filt.outgoing),
+                filters=(self.command_predicate() & filt.me),
             ),
             0,
         )
@@ -255,6 +265,9 @@ class TelegramBot(CaligoBase):
             filt.new_chat_members | filt.left_chat_member,
             group=1,
         )
+        # Only wired when a module actually listens for them (see update_module_event).
+        self.update_module_event("message_edit", EditedMessageHandler, group=0)
+        self.update_module_event("message_delete", DeletedMessagesHandler, group=0)
         if self.helper_initialized:
             self.update_helper_event("callback_query", CallbackQueryHandler)
             self.update_helper_event("inline_query", InlineQueryHandler)

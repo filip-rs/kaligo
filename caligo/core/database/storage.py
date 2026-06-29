@@ -37,6 +37,8 @@ class PersistentStorage(Storage):
         self._peer = database["PEERS"]
         self._remove_peers = remove_peers
         self._session = database["SESSION"]
+        self._usernames = database["USERNAMES"]
+        self._update_state = database["UPDATE_STATE"]
 
     async def open(self) -> None:
         """
@@ -103,6 +105,54 @@ class PersistentStorage(Storage):
 
         await self._peer.bulk_write(bulk)
 
+    async def update_usernames(self, usernames: List[Tuple[int, str]]) -> None:
+        """(peer_id, username) - a peer may now have multiple usernames."""
+        # Clear any usernames previously stored for these peers, then re-add.
+        peer_ids = {u[0] for u in usernames}
+        for peer_id in peer_ids:
+            await self._usernames.delete_many({"peer_id": peer_id})
+
+        if not usernames:
+            return
+
+        s = int(time.time())
+        bulk = [
+            UpdateOne(
+                {"_id": username},
+                {"$set": {"peer_id": peer_id, "last_update_on": s}},
+                upsert=True,
+            )
+            for peer_id, username in usernames
+        ]
+        await self._usernames.bulk_write(bulk)
+
+    async def update_state(
+        self, value: Union[int, Tuple[int, int, int, int, int]] = object  # type: ignore
+    ) -> Optional[List[Tuple[int, int, int, int, int]]]:
+        """(id, pts, qts, date, seq)"""
+        if value == object:
+            states = []
+            async for doc in self._update_state.find():
+                states.append(
+                    (doc["_id"], doc["pts"], doc["qts"], doc["date"], doc["seq"])
+                )
+            return states
+
+        if isinstance(value, int):
+            await self._update_state.delete_one({"_id": value})
+        else:
+            id_, pts, qts, date, seq = value
+            await self._update_state.update_one(
+                {"_id": id_},
+                {"$set": {"pts": pts, "qts": qts, "date": date, "seq": seq}},
+                upsert=True,
+            )
+
+        return None
+
+    async def remove_state(self, chat_id: int) -> None:
+        await self._update_state.delete_one({"_id": chat_id})
+
     async def get_peer_by_id(
         self, peer_id: int
     ) -> Union[InputPeerUser, InputPeerChat, InputPeerChannel]:
@@ -124,8 +174,24 @@ class PersistentStorage(Storage):
             {"_id": 1, "access_hash": 1, "type": 1, "last_update_on": 1},
         )
 
-        if not res:
-            raise KeyError(f"Username not found: {username}")
+        if res is None:
+            # Fall back to the secondary usernames collection (peers can have
+            # more than one username; only the primary is stored on the peer).
+            uname = await self._usernames.find_one(
+                {"_id": username}, {"peer_id": 1, "last_update_on": 1}
+            )
+            if uname is None:
+                raise KeyError(f"Username not found: {username}")
+
+            if abs(time.time() - uname["last_update_on"]) > self.USERNAME_TTL:
+                raise KeyError(f"Username expired: {username}")
+
+            res = await self._peer.find_one(
+                {"_id": uname["peer_id"]},
+                {"_id": 1, "access_hash": 1, "type": 1, "last_update_on": 1},
+            )
+            if res is None:
+                raise KeyError(f"Username not found: {username}")
 
         if abs(time.time() - res["last_update_on"]) > self.USERNAME_TTL:
             raise KeyError(f"Username expired: {username}")

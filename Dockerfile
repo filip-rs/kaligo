@@ -1,5 +1,5 @@
 # Build Python package and dependencies
-FROM python:3.11-alpine AS python-build
+FROM python:3.12-alpine AS python-build
 RUN apk add --no-cache \
         git \
         libffi-dev \
@@ -30,14 +30,15 @@ RUN pip install --upgrade pip
 RUN pip install -r requirements.txt
 
 # Package everything
-FROM python:3.11-alpine AS final
+FROM python:3.12-alpine AS final
 # Update system first
 RUN apk update
 
 # Install optional native tools (for full functionality)
+# Note: neofetch was dropped from Alpine repos (upstream discontinued in 2024).
+# The .sysinfo command degrades gracefully if it's absent.
 RUN apk add --no-cache \
         curl \
-        neofetch \
         git \
         nss
 # Install native dependencies
@@ -70,6 +71,9 @@ RUN apk add --no-cache \
         xvidcore \
         lame
 
+# Create an unprivileged user to run the bot
+RUN addgroup -S caligo && adduser -S -G caligo -h /caligo caligo
+
 # Setup runtime files
 RUN mkdir -p /caligo
 WORKDIR /caligo
@@ -78,6 +82,21 @@ COPY . .
 # Copy Python venv
 ENV PATH="/opt/venv/bin:$PATH"
 COPY --from=python-build /opt/venv /opt/venv
+
+# Create the downloads dir (the only path the bot writes to at runtime; it's
+# backed by a named volume in docker-compose). Creating + chowning it here means
+# the volume inherits caligo ownership so the non-root user can write to it.
+RUN mkdir -p /caligo/caligo/downloads
+
+# Writable log dir (outside the package, backed by a named volume). Created +
+# chowned here so the volume inherits caligo ownership.
+RUN mkdir -p /caligo/logs
+
+# Give the runtime user ownership of the app dir
+RUN chown -R caligo:caligo /caligo
+
+# Drop root before running
+USER caligo
 
 # Set runtime settings
 CMD ["python3", "-m", "caligo"]

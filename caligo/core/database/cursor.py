@@ -181,16 +181,26 @@ class AsyncCursor(AsyncCursorBase, Generic[_DocumentType]):
         return self
 
     def _query_flags(self) -> int:
+        # pymongo >= 4.9 renamed the mangled _Cursor__* internals to plain names.
         # skipcq: PYL-W0212
-        return self.dispatch._Cursor__query_flags  # type: ignore
+        try:
+            return self.dispatch._query_flags  # type: ignore
+        except AttributeError:
+            return self.dispatch._Cursor__query_flags  # type: ignore
 
     def _data(self) -> Deque[Any]:
         # skipcq: PYL-W0212
-        return self.dispatch._Cursor__data  # type: ignore
+        try:
+            return self.dispatch._data  # type: ignore
+        except AttributeError:
+            return self.dispatch._Cursor__data  # type: ignore
 
     def _killed(self) -> bool:
         # skipcq: PYL-W0212
-        return self.dispatch._Cursor__killed  # type: ignore
+        try:
+            return self.dispatch._killed  # type: ignore
+        except AttributeError:
+            return self.dispatch._Cursor__killed  # type: ignore
 
 
 class AsyncRawBatchCursor(AsyncCursor, Generic[_DocumentType]):

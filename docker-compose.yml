@@ -1,6 +1,92 @@
-version: '3.9'
 services:
+  mongo:
+    image: mongo:7
+    restart: always
+
+    # Credentials come from the .env file (see .env.example). The bot uses the
+    # SAME password in its config.toml db_uri.
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=root
+      - MONGO_INITDB_ROOT_PASSWORD=${MONGO_PASSWORD:?set MONGO_PASSWORD in .env}
+
+    # NO `ports:` mapping on purpose. Mongo is reachable only over the internal
+    # Compose network (by the hostname "mongo"), never from the host or the
+    # internet. This is the main security win over a public Atlas cluster.
+
+    volumes:
+      - mongo_data:/data/db
+
+    # Hardening
+    security_opt:
+      - no-new-privileges:true
+
+    # Lets the bot wait until Mongo is actually accepting connections.
+    healthcheck:
+      test: ["CMD", "mongosh", "--quiet", "--eval", "db.runCommand('ping').ok"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+
+    mem_limit: 1g
+
   caligo:
     build:
       context: .
+      # Build over the host network namespace. Needed when building behind a
+      # VPN (e.g. Mullvad), where the Docker bridge can't reach the tunnel's
+      # DNS/routing but the host can. Affects build only, not runtime.
+      network: host
     restart: always
+
+    # Wait for Mongo to be healthy before starting.
+    depends_on:
+      mongo:
+        condition: service_healthy
+
+    # --- Hardening ---------------------------------------------------------
+    # Block privilege escalation (e.g. setuid binaries) inside the container.
+    security_opt:
+      - no-new-privileges:true
+
+    # Drop every Linux capability. The bot only needs to talk to the network,
+    # which works fine without any caps.
+    cap_drop:
+      - ALL
+
+    # NOTE: a read-only root filesystem was intentionally NOT enabled. The bot
+    # writes to several scattered paths at runtime (logs, sticker cache, etc.),
+    # so read_only caused repeated startup failures for little real-world gain
+    # given the other controls here (non-root user, all caps dropped,
+    # no-new-privileges, private internal-only Mongo). The container's writable
+    # layer is ephemeral; persistent data still lives on the named volumes below.
+    environment:
+      - PYTHONDONTWRITEBYTECODE=1
+      # Keep the log file on a persistent volume rather than the ephemeral layer.
+      - CALIGO_LOG_DIR=/caligo/logs
+
+    volumes:
+      # Config is mounted read-only; the container can never modify it.
+      - ./config.toml:/caligo/config.toml:ro
+      # Writable, persisted downloads dir ONLY. Do NOT mount over /caligo/caligo
+      # (the Python package) — a named volume there shadows the image's source
+      # code with a stale snapshot. The dir is created+chowned in the Dockerfile
+      # so this volume inherits the caligo user's ownership.
+      - caligo_downloads:/caligo/caligo/downloads
+      # Persistent, writable log directory (see CALIGO_LOG_DIR above).
+      - caligo_logs:/caligo/logs
+
+    # Resource caps to blunt crypto-miner / fork-bomb style abuse.
+    mem_limit: 1g
+    pids_limit: 256
+
+    # NOTE on egress: the bot now only needs to reach Telegram (Mongo is
+    # internal). docker-compose can't firewall outbound traffic on its own;
+    # enforce that at the host (iptables/nftables/cloud security group) to kill
+    # reverse shells and data exfil. Do NOT add `network_mode: host` or mount
+    # the Docker socket — either one turns container RCE into host takeover.
+
+volumes:
+  caligo_downloads:
+  caligo_logs:
+  mongo_data:
