@@ -4,17 +4,17 @@ An updated and maintained fork of [Caligo](https://github.com/userbotindo/caligo
 
 ## Prerequisites
 
-Kaligo is deployed entirely with **Docker Compose**, which is available for all major operating systems. Compose builds the bot image and runs a private, local MongoDB instance alongside it, so there's nothing else to install — you don't need Python or a cloud database on the host.
+Kaligo is deployed entirely with **Docker Compose**, which is available for all major operating systems. Compose builds the bot image and runs a private, local MongoDB instance alongside it, so there's nothing else to install.
 
 It's developed and tested on Linux. Windows and macOS should work too via Docker Desktop or WSL.
 
 ## Configuration
 
-Configure Kaligo *before* running it for the first time. There are two files to set up.
+Configure Kaligo _before_ running it for the first time. There are two files to set up.
 
 ### 1. `.env`
 
-This holds the password for the bundled MongoDB instance. Copy the example and set a strong, random password:
+This holds the password for the bundled MongoDB instance. Copy the example and set a strong password:
 
 ```bash
 cp .env.example .env && nvim .env
@@ -41,7 +41,7 @@ cp sample_config.toml config.toml && nvim config.toml
 
   Replace `<MONGO_PASSWORD>` with the exact value from your `.env`.
 
-Configuration must be complete and correct before the first start, or the bot won't come up.
+Configuration must be complete and correct before the first start, or the bot won't run.
 
 ## First run & authentication
 
@@ -67,7 +67,7 @@ Follow the logs with:
 docker compose logs -f
 ```
 
-To stop it, run `docker compose down`.
+To stop it, run `docker compose stop` and to remove it run `docker compose down`.
 
 ## Support
 
