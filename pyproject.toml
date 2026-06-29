@@ -3,14 +3,14 @@
 #
 
 [tool.poetry]
-name = "caligo"
+name = "kaligo"
 version = "1.0.0"
 description = "selfbot for Telegram."
 authors = ["Adek Maulana <adek@techdro.id>"]
 license = "MIT"
 readme = "README.md"
-repository = "https://github.com/adekmaulana/caligo"
-documentation = "https://github.com/adekmaulana/caligo/blob/master/README.md"
+repository = "https://github.com/filip-rs/kaligo"
+documentation = "https://github.com/filip-rs/kaligo/blob/master/README.md"
 
 # Search info
 keywords = ["chat", "telegram", "selfbot", "telegram-bot", "pyrogram"]
@@ -26,10 +26,10 @@ classifiers = [
 ]
 
 [tool.poetry.scripts]
-caligo = "caligo.main:main"
+kaligo = "kaligo.main:main"
 
 [tool.poetry.urls]
-"Bug Tracker" = "https://github.com/adekmaulana/caligo/issues"
+"Bug Tracker" = "https://github.com/filip-rs/kaligo/issues"
 "Community" = ""
 
 [tool.poetry.dependencies]

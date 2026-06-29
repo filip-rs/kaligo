@@ -30,7 +30,7 @@ services:
 
     mem_limit: 1g
 
-  caligo:
+  kaligo:
     build:
       context: .
       # Build over the host network namespace. Needed when building behind a
@@ -63,18 +63,18 @@ services:
     environment:
       - PYTHONDONTWRITEBYTECODE=1
       # Keep the log file on a persistent volume rather than the ephemeral layer.
-      - CALIGO_LOG_DIR=/caligo/logs
+      - KALIGO_LOG_DIR=/kaligo/logs
 
     volumes:
       # Config is mounted read-only; the container can never modify it.
-      - ./config.toml:/caligo/config.toml:ro
-      # Writable, persisted downloads dir ONLY. Do NOT mount over /caligo/caligo
+      - ./config.toml:/kaligo/config.toml:ro
+      # Writable, persisted downloads dir ONLY. Do NOT mount over /kaligo/kaligo
       # (the Python package) — a named volume there shadows the image's source
       # code with a stale snapshot. The dir is created+chowned in the Dockerfile
-      # so this volume inherits the caligo user's ownership.
-      - caligo_downloads:/caligo/caligo/downloads
-      # Persistent, writable log directory (see CALIGO_LOG_DIR above).
-      - caligo_logs:/caligo/logs
+      # so this volume inherits the kaligo user's ownership.
+      - kaligo_downloads:/kaligo/kaligo/downloads
+      # Persistent, writable log directory (see KALIGO_LOG_DIR above).
+      - kaligo_logs:/kaligo/logs
 
     # Resource caps to blunt crypto-miner / fork-bomb style abuse.
     mem_limit: 1g
@@ -87,6 +87,6 @@ services:
     # the Docker socket — either one turns container RCE into host takeover.
 
 volumes:
-  caligo_downloads:
-  caligo_logs:
+  kaligo_downloads:
+  kaligo_logs:
   mongo_data:

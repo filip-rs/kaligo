@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
 
-from caligo import main
+from kaligo import main
 
 main.main()

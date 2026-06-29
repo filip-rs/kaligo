@@ -1,86 +1,74 @@
-<h1 align="center">Caligo</h1>
+<h1 align="center">Kaligo</h1>
 
-A SelfBot for Telegram made with Python using [Pyrogram](https://github.com/pyrogram/pyrogram) library. It's highly inspired from [pyrobud](https://github.com/kdrag0n/pyrobud) that writtens in [Telethon](https://github.com/LonamiWebs/Telethon) library.
-It's the same but different, you know what i mean?
+An updated and maintained fork of [Caligo](https://github.com/userbotindo/caligo) which is a selfbot for Telegram made with Python using the [Pyrogram](https://github.com/pyrogram/pyrogram) library. It's highly inspired by [pyrobud](https://github.com/kdrag0n/pyrobud).
 
-Caligo needs **Python 3.12** or newer to run.
+## Prerequisites
 
-## Compatibility
+Kaligo is deployed entirely with **Docker Compose**, which is available for all major operating systems. Compose builds the bot image and runs a private, local MongoDB instance alongside it, so there's nothing else to install — you don't need Python or a cloud database on the host.
 
-Caligo should work with all Linux-based operating systems.
-
-This program tested partially on MacOs M1 and not officially support for windows.
-
-## Installation
-
-Caligo uses MongoDB Atlas for it database, you can get it free at <https://www.mongodb.com/> and save the uri for use on config and to generate your session.
-
-Obviously you need git, and it should be already installed on major operating systems linux based.
-
-### Local
-
-First, clone this Git repository locally: `git clone https://github.com/userbotindo/caligo`
-
-After that, you can run `python3 -m pip install .` to install the bot along with the depencies.
-
-Once it's installed, you can choose to invoke it using the `caligo` command, or run the bot in-place (which is described later in the Usage section). Running it in-place is recommended to allow for automatic updates via Git.
-
-#### Error: Directory '.' is not installable. File 'setup.py' not found.
-
-This common error is caused by an outdated version of pip. We use the Poetry package manager to make things easier to maintain, which works with pip through PEP-517. This is a relatively new standard, so a newer version of pip is necessary to make it work.
-
-Upgrade to pip 19 to fix this issue: `pip3 install -U pip`
-
-### Using Heroku
-
-#### Config Gist
-- Go to [gist.github.com](https://gist.github.com/)
-- Create a new gist and make sure it's private/secret
-- Copy the content of `sample_config.toml` and paste it to your gist
-- Fill the coresponding _Name_ and _Value_
-- Make sure you name the gist as `config.toml`
-- Click **Create secret gist** and copy the link save for later use
-
-#### Deploying
-- Go to your [dashboard](https://dashboard.heroku.com/apps)
-- Create an empty application then go to the app setting
-- Scroll a bit until you find **Buildpacks** section
-- Click **Add Buildpack** and choose **Python** and then click **Save Changes**
-- Click **Add Buildpack** again and put this [repo](https://github.com/userbotindo/heroku-buildpack-caligo-helper) and then click **Save Changes**
-- Scroll top a bit until you find **Reveal Config Vars** > Click it
-    * Fill `CONFIG` with the link of your recently created gist
-    * Fill `GITHUB_REPO` with your forked repo link
-    * Fill `GITHUB_BRANCH` with your branch name
-- Go to **Deploy** tab and connect your github account
-- Choose your forked repo and then click **Deploy Branch**
-- It should be finished around 1-2 minute(s)
-- Go to **Resources** tab and turn on the worker
-
-## Generating Session
-
-### Heroku
-
-Click more on your app page and the click **Run console** and run this command `python3 generate_session.py`.
-Fill the `API_ID`, `API_HASH` and `MONGODB URI` when it asked and wait until it finished and your userbot is ready.
-
-### Local
-
-Just run the bot normally.
+It's developed and tested on Linux. Windows and macOS should work too via Docker Desktop or WSL.
 
 ## Configuration
 
-Copy `sample_config.toml` to `config.toml` and edit the settings as desired. Each and every setting is documented by the comments above it.
+Configure Kaligo *before* running it for the first time. There are two files to set up.
 
-Obtain the _API ID_ and _API HASH_ from [Telegram's website](https://my.telegram.org/apps). **TREAT THESE SECRETS LIKE A PASSWORD!**
+### 1. `.env`
 
-Obtain the DB_URI from [MongoDB](https://cloud.mongodb.com/). **TREAT THIS SECRETS LIKE A PASSWORD!**
+This holds the password for the bundled MongoDB instance. Copy the example and set a strong, random password:
 
-Configuration must be complete before starting the bot for the first time for it to work properly.
+```bash
+cp .env.example .env && nvim .env
+```
 
-## Usage
+```dotenv
+MONGO_PASSWORD=change-me-to-a-long-random-string
+```
 
-To start the bot, type `python3 main.py` or `python3 -m caligo` if you are running it in-place or use command corresponding to your chosen installation method above.
+### 2. `config.toml`
+
+Copy the sample and fill in the fields. Every setting is documented by the comments above it.
+
+```bash
+cp sample_config.toml config.toml && nvim config.toml
+```
+
+- **`api_id` / `api_hash`** — create an API app at [my.telegram.org/apps](https://my.telegram.org/apps) and copy the values. **Treat these like a password!**
+- **`db_uri`** — Kaligo no longer uses a cloud database. MongoDB runs as the `mongo` service defined in `docker-compose.yml`, reachable only over Compose's internal network by the hostname `mongo`. Point the URI at that service using the password you just set in `.env`:
+
+  ```toml
+  db_uri = "mongodb://root:<MONGO_PASSWORD>@mongo:27017"
+  ```
+
+  Replace `<MONGO_PASSWORD>` with the exact value from your `.env`.
+
+Configuration must be complete and correct before the first start, or the bot won't come up.
+
+## First run & authentication
+
+Build the image and run the session generator — this signs you into Telegram:
+
+```bash
+docker compose build && docker compose run --rm kaligo python3 generate_session.py
+```
+
+The first time you run it, Pyrogram prompts you for your phone number and the login code Telegram sends you (and your 2FA password, if enabled). Once you're signed in, the session is stored in MongoDB and reused on every subsequent start, so you only need to do this once.
+
+## Running
+
+Start the bot in the background:
+
+```bash
+docker compose up -d
+```
+
+Follow the logs with:
+
+```bash
+docker compose logs -f
+```
+
+To stop it, run `docker compose down`.
 
 ## Support
 
-Feel free to join the official support group on Telegram for help or general discussion regarding the bot. You may also open an [issue](https://github.com/adekmaulana/caligo/issues) on GitHub for bugs, suggestions, or anything else relevant to the project.
+I have contacts on my GitHub profile and you can reach me from there.

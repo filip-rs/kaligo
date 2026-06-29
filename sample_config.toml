@@ -9,8 +9,9 @@ api_hash = "12345678" # Client API hash used for authentication
 # token = "123456789:ABC"  # Remove the '#'' and add your token to initialize
 
 [bot]
-# Mongodb url from https://cloud.mongodb.com/
-db_uri = "mongodb://srv+"
+# Connection URI for the bundled MongoDB service (see README). Replace
+# <MONGO_PASSWORD> with the password you set in your .env file.
+db_uri = "mongodb://root:<MONGO_PASSWORD>@mongo:27017"
 
 # ---- OPTIONAL ---- #
 # Bot command prefix

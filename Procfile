@@ -1,1 +1,1 @@
-worker: python -m caligo
+worker: python -m kaligo

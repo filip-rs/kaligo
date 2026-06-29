@@ -7,7 +7,7 @@ except ModuleNotFoundError:  # Python < 3.12
     import tomli as tomllib
 
 from pyrogram.client import Client
-from caligo.core import database
+from kaligo.core import database
 
 
 def load_config(filename: str) -> dict:
@@ -49,15 +49,15 @@ async def create_session() -> None:
     client = Client(
         api_id=api_id,
         api_hash=api_hash,
-        name="caligo",
-        workdir="caligo",
+        name="kaligo",
+        workdir="kaligo",
     )
     
     # Create a MongoDB client with the given URI and connect lazily
     db_client = database.AsyncClient(mongodb_uri, connect=False)
     
-    # Get the CALIGO database from the MongoDB client
-    db = db_client.get_database("CALIGO")
+    # Get the KALIGO database from the MongoDB client
+    db = db_client.get_database("KALIGO")
     
     # Set the persistent storage for the Pyrogram client using the database
     client.storage = database.storage.PersistentStorage(db)  # type: ignore

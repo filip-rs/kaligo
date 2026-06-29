@@ -72,11 +72,11 @@ RUN apk add --no-cache \
         lame
 
 # Create an unprivileged user to run the bot
-RUN addgroup -S caligo && adduser -S -G caligo -h /caligo caligo
+RUN addgroup -S kaligo && adduser -S -G kaligo -h /kaligo kaligo
 
 # Setup runtime files
-RUN mkdir -p /caligo
-WORKDIR /caligo
+RUN mkdir -p /kaligo
+WORKDIR /kaligo
 COPY . .
 
 # Copy Python venv
@@ -85,18 +85,18 @@ COPY --from=python-build /opt/venv /opt/venv
 
 # Create the downloads dir (the only path the bot writes to at runtime; it's
 # backed by a named volume in docker-compose). Creating + chowning it here means
-# the volume inherits caligo ownership so the non-root user can write to it.
-RUN mkdir -p /caligo/caligo/downloads
+# the volume inherits kaligo ownership so the non-root user can write to it.
+RUN mkdir -p /kaligo/kaligo/downloads
 
 # Writable log dir (outside the package, backed by a named volume). Created +
-# chowned here so the volume inherits caligo ownership.
-RUN mkdir -p /caligo/logs
+# chowned here so the volume inherits kaligo ownership.
+RUN mkdir -p /kaligo/logs
 
 # Give the runtime user ownership of the app dir
-RUN chown -R caligo:caligo /caligo
+RUN chown -R kaligo:kaligo /kaligo
 
 # Drop root before running
-USER caligo
+USER kaligo
 
 # Set runtime settings
-CMD ["python3", "-m", "caligo"]
+CMD ["python3", "-m", "kaligo"]

@@ -12,11 +12,11 @@ dist/
 .cache/
 .heroku/
 .profile.d/
-caligo/.chache/
+kaligo/.chache/
 chache/
 downloads/
-caligo/downloads/
-caligo/chache/
+kaligo/downloads/
+kaligo/chache/
 vendor/
 
 # file
