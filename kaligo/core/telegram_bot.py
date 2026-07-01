@@ -170,11 +170,36 @@ class TelegramBot(KaligoBase):
             self.loop.add_signal_handler(name, partial(signal_handler, name))
 
         while True:
-            self.__idle__ = asyncio.create_task(asyncio.sleep(300), name="idle")
+            self.__idle__ = asyncio.create_task(asyncio.sleep(60), name="idle")
 
             try:
                 await self.__idle__
             except asyncio.CancelledError:
+                break
+
+            # Connection watchdog. Pyrofork's own reconnect loop can silently
+            # fail -- e.g. the TCP transport dies and a later send raises
+            # "OSError: ... the handler is closed" -- leaving us connected in
+            # name only while nothing gets processed. Actively probe Telegram;
+            # if it doesn't answer, break out so run()'s `finally` tears the bot
+            # down cleanly (closing self.http and the DB) and the process exits.
+            # Docker's `restart: always` then brings it back with a fresh
+            # connection. The probe is tracked in self.__idle__ so an incoming
+            # stop signal cancels it too.
+            self.__idle__ = asyncio.create_task(
+                asyncio.wait_for(self.client.get_me(), timeout=15), name="health"
+            )
+
+            try:
+                await self.__idle__
+            except asyncio.CancelledError:
+                break
+            except Exception as e:  # skipcq: PYL-W0703
+                self.log.error(
+                    "Connection health check failed; shutting down for a "
+                    "clean restart",
+                    exc_info=e,
+                )
                 break
 
     async def run(self: "Kaligo") -> None:
